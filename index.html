@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PDF Downloader</title>
+</head>
+<body>
+  <p>Downloading your PDF...</p>
+
+  <script>
+    async function sendToFunction() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const cust_name = urlParams.get("cust_name");
+      const base64 = urlParams.get("base64");
+
+      if (!cust_name || !base64) {
+        document.body.innerHTML = "<p>Missing parameters.</p>";
+        return;
+      }
+
+      const response = await fetch("https://<your-azure-function-url>", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cust_name: cust_name,
+          base64: base64
+        })
+      });
+
+      if (!response.ok) {
+        document.body.innerHTML = "<p>Failed to download PDF.</p>";
+        return;
+      }
+
+      const blob = await response.blob();
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = `${cust_name}.pdf`;
+      downloadLink.click();
+    }
+
+    sendToFunction();
+  </script>
+</body>
+</html>
