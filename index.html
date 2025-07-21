@@ -4,46 +4,49 @@
   <title>Download PDF</title>
 </head>
 <body>
-  <p>Preparing your file...</p>
-  <script>
-    // Helper: get query param by name
-    function getParam(param) {
-      const url = new URL(window.location.href);
-      return url.searchParams.get(param);
-    }
+  <h2>Preparing your download...</h2>
+  <p>Please wait a moment...</p>
 
-    const cust_name = getParam("cust_name");
-    const file = getParam("file");
+  <script>
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const cust_name = urlParams.get('cust_name');
+    const file = urlParams.get('file');
 
     if (!cust_name || !file) {
-      document.body.innerHTML = "<h3 style='color:red;'>Missing parameters.</h3>";
-    } else {
-      fetch("https://powerbicrm-prd.azurewebsites.net/api/DisplayPDFPost?", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          cust_name: cust_name,
-          file: file
-        })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to download PDF");
-        return res.blob();
-      })
-      .then(blob => {
-        const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
-        link.download = `${cust_name}.pdf`;
-        link.click();
-        document.body.innerHTML = "<h3>Download should start shortly.</h3>";
-      })
-      .catch(err => {
-        console.error(err);
-        document.body.innerHTML = "<h3 style='color:red;'>Error: " + err.message + "</h3>";
-      });
+      document.body.innerHTML = "<h3>Missing parameters.</h3>";
+      throw new Error("Missing parameters.");
     }
+
+    // Send POST request to Azure Function
+    fetch("https://<YOUR_AZURE_FUNCTION_URL>", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        cust_name: cust_name,
+        file: file
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Error downloading PDF");
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${cust_name}.pdf`;
+      a.click();
+      document.body.innerHTML = "<h3>Download started.</h3>";
+    })
+    .catch(err => {
+      console.error(err);
+      document.body.innerHTML = "<h3>Something went wrong: " + err.message + "</h3>";
+    });
   </script>
 </body>
 </html>
